@@ -12,6 +12,8 @@ namespace FurAndFangs.Api.Models
         public string Sex { get; set; } // Male,Female,Unknown
         public string Diet { get; set; } // Herbivore,Carnivore,Omnivore
         public string Notes { get; set; }
+        public double Weight { get; set; } // Weight in pounds
+        public double WeightKg => Weight * 0.453592; // Convert pounds to kilograms
     }
 }
 
