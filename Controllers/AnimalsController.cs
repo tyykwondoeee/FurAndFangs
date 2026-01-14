@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
@@ -24,31 +23,44 @@ namespace FurAndFangs.Api.Controllers
             _httpClientFactory = httpClientFactory;
         }
 
-        // Get api/animals
+        // GET: api/animals
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Animal>>> GetAnimals()
         {
             return await _context.Animals.ToListAsync();
         }
 
-        // Post api/animals/ask
+        // POST: api/animals/ask
         [HttpPost("ask")]
-        public async Task<ActionResult<string>> AskAnimalQuestion([FromBody] string question)
+        public async Task<ActionResult<string>> AskAnimalQuestion([FromBody] AnimalQuestionRequest request)
         {
-            if (string.IsNullOrWhiteSpace(question))
-                return BadRequest("Please provide a question.");
+            if (string.IsNullOrWhiteSpace(request.Question))
+                return BadRequest("Please ask a question.");
 
             var client = _httpClientFactory.CreateClient("OpenAI");
+
+            // Build prompt with context
+            var systemPrompt = "You are an expert pet assistant. Answer questions about pet care, diet, species, and general animal knowledge." +
+                "Include a disclaimer in every response that this advice is general information and that users should consult a licensed vet for medical concerns.";
+
+            if (request.Species != null)
+                systemPrompt += $" The animal is a {request.Species}.";
+            if (request.Sex != null)
+                systemPrompt += $" Sex: {request.Sex}.";
+            if (request.Diet != null)
+                systemPrompt += $" Diet: {request.Diet}.";
+            if (request.Weight != null && request.Unit != null)
+                systemPrompt += $" Weight: {request.Weight} {request.Unit}.";
 
             var requestBody = new
             {
                 model = "gpt-4",
                 messages = new[]
                 {
-                    new { role = "system", content = "You are an expert pet assistant. Answer questions about pet care, diet, species, and general animal knowledge." },
-                    new { role = "user", content = question }
+                    new { role = "system", content = systemPrompt },
+                    new { role = "user", content = request.Question }
                 },
-                max_tokens = 200
+                max_tokens = 400
             };
 
             var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
