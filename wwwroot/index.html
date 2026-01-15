@@ -15,15 +15,16 @@
         margin-top: 50px;
     }
 
-    body.dark-theme {
-        background-color: black;
-        color: white;
-    } 
+        body.dark-theme {
+            background-color: black;
+            color: white;
+        }
 
-    body.dark-theme #logo {
-        background-color: black;
-        border-radius: 10px;
-    }
+            body.dark-theme #logo {
+                background-color: black;
+                border-radius: 10px;
+            }
+
     #themeToggle {
         position: absolute;
         top: 20px;
@@ -32,33 +33,74 @@
         font-size: 14px;
         cursor: pointer;
     }
+
     button {
-            margin-top: 20px;
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
+        margin-top: 20px;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    #askButton {
+        padding: 12px 20px;
+        font-size: 16px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        background-color: white;
+        color: black;
+    }
+
+    body.dark-theme #askButton {
+        background-color: #222;
+        color: white;
+        border: 1px solid #555;
     }
 
     .logo-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 80px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 80px;
     }
 
     #logo {
-            width: 800px;
-            max-width: 80%;
-            height: auto;
-            display: block;
-            margin: 0 auto;
+        width: 800px;
+        max-width: 80%;
+        height: auto;
+        display: block;
+        margin: 0 auto;
     }
+
+    #speciesSelect,
+    #sexSelect,
+    #dietSelect,
+    #unitSelect {
+        width: 120px;
+        padding: 12px;
+        font-size: 16px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        background-color: white;
+        color: black;
+    }
+
+    body.dark-theme #speciesSelect,
+    body.dark-theme #sexSelect,
+    body.dark-theme #dietSelect,
+    body.dark-theme #unitSelect {
+        background-color: #222;
+        color: white;
+        border: 1px solid #555;
+    }
+
     .question-container {
         margin-top: 40px;
         display: flex;
         justify-content: center;
         gap: 10px;
+        flex-wrap: wrap;
     }
+
     #questionInput {
         width: 400px;
         padding: 12px;
@@ -66,16 +108,22 @@
         border-radius: 6px;
         border: 1px solid #ccc;
     }
-    #askButton {
-        padding: 12px 20px;
+
+    #weightInput {
+        width: 120px;
+        padding: 12px;
         font-size: 16px;
-        cursor: pointer;
+        border-radius: 6px;
+        border: 1px solid #ccc;
     }
+
+    body.dark-theme #weightInput,
     body.dark-theme #questionInput {
         background-color: #222;
         color: white;
         border: 1px solid #555;
     }
+
     #responseText {
         margin-top: 30px;
         padding: 15px 20px;
@@ -88,6 +136,7 @@
         font-size: 16px;
         display: none;
     }
+
     body.dark-theme #responseText {
         background-color: #1e1e1e;
         color: white;
@@ -103,26 +152,60 @@
     <h1>Welcome to Fur and Fangs!</h1>
 
     <div class="question-container">
-        <input
-               type="text"
-               id="questionInput"
-               placeholder="Ask a question about your pet..."
-               />
+        <input type="text" id="questionInput" placeholder="Ask a question about your pet..." />
+
+        <select id="speciesSelect">
+            <option value="">Select species</option>
+            <option value="Dog">Dog</option>
+            <option value="Cat">Cat</option>
+            <option value="Bird">Bird</option>
+            <option value="Reptile">Reptile</option>
+            <option value="Rabbit">Rabbit</option>
+            <option value="Rodent">Rodent</option>
+            <option value="Fish">Fish</option>
+            <option value="Tarantula">Tarantula</option>
+            <option value="Amphibian">Amphibian</option>
+            <option value="Spider">Spider</option>
+            <option value="Other">Other</option>
+        </select>
+
+        <select id="sexSelect">
+            <option value="">Select sex</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Unknown">Unknown</option>
+        </select>
+
+        <select id="dietSelect">
+            <option value="">Select diet</option>
+            <option value="Herbivore">Herbivore</option>
+            <option value="Carnivore">Carnivore</option>
+            <option value="Omnivore">Omnivore</option>
+            <option value="Unknown">Unknown</option>
+        </select>
+
+        <input type="number" id="weightInput" placeholder="Weight" min="0" />
+
+        <select id="unitSelect">
+            <option value="">Select unit</option>
+            <option value="Pounds">Pounds</option>
+            <option value="Kilograms">Kilograms</option>
+        </select>
+
         <button id="askButton">Ask</button>
     </div>
 
     <p id="responseText"></p>
 
     <button id="themeToggle">Change Theme</button>
+
     <script>
         const button = document.getElementById('themeToggle');
         const logo = document.getElementById('logo');
-
         const askButton = document.getElementById('askButton');
         const questionInput = document.getElementById('questionInput');
         const responseText = document.getElementById('responseText');
 
-        //check local storage
         if (localStorage.getItem('theme') === 'dark') {
             document.body.classList.add('dark-theme');
             logo.src = 'logo-dark.png';
@@ -130,8 +213,6 @@
 
         button.addEventListener('click', () => {
             document.body.classList.toggle('dark-theme');
-
-            //save theme
             if (document.body.classList.contains('dark-theme')) {
                 localStorage.setItem('theme', 'dark');
                 logo.src = 'logo-dark.png';
@@ -143,8 +224,13 @@
 
         askButton.addEventListener('click', async () => {
             const question = questionInput.value;
+            const species = document.getElementById('speciesSelect').value || null;
+            const sex = document.getElementById('sexSelect').value || null;
+            const diet = document.getElementById('dietSelect').value || null;
+            const weight = document.getElementById('weightInput').value || null;
+            const unit = document.getElementById('unitSelect').value || null;
 
-            if (question.trim() === '') {
+            if (!question.trim()) {
                 responseText.style.display = 'block';
                 responseText.textContent = 'Please enter a question.';
                 return;
@@ -155,23 +241,29 @@
             questionInput.value = '';
 
             try {
-                const response = await fetch('/api/ask', {
+                const response = await fetch('/api/animals/ask', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ question: question })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        request: question,
+                        species: species,
+                        sex: sex,
+                        diet: diet,
+                        weight: weight,
+                        unit: unit
+                    })
                 });
 
+                const text = await response.text();
+
                 if (!response.ok) {
-                    throw new Error('Server error');
+                    responseText.textContent = text;
+                    return;
                 }
 
-                const data = await response.json();
-
-                responseText.textContent = data.answer;
+                responseText.textContent = text;
             } catch (error) {
-                responseText.textContent = 'Sorry, something went wrong.';
+                responseText.textContent = 'Sorry, something went wrong: ' + error.message;
                 console.error(error);
             }
         });

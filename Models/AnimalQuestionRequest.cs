@@ -4,11 +4,11 @@ namespace FurAndFangs.Api.Models
 {
     public class AnimalQuestionRequest
     {
-        public string Question { get; set; }
-        public AnimalType? Species { get; set; } // Optional if unknown
-        public Sex? Sex { get; set; } // Optional if unknown
-        public DietType? Diet { get; set; } // Optional if unknown
-        public double? Weight { get; set; } // Optional if unknown
-        public WeightUnit? Unit { get; set; } // Optional if unknown
+        public string Request { get; set; }
+        public AnimalType? Species { get; set; }
+        public Sex? Sex { get; set; }
+        public DietType? Diet { get; set; }
+        public double? Weight { get; set; }
+        public WeightUnit? Unit { get; set; }
     }
 }

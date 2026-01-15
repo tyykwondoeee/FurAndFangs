@@ -1,84 +1,87 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using FurAndFangs.Api.Data;
-using FurAndFangs.Api.Models;
-using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Net.Http;
+﻿using FurAndFangs.Api.Models;
+using FurAndFangs.Api.Models.Enums;
+using Microsoft.AspNetCore.Mvc;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
 namespace FurAndFangs.Api.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
     public class AnimalsController : ControllerBase
     {
-        private readonly PetContext _context;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _configuration;
 
-        public AnimalsController(PetContext context, IHttpClientFactory httpClientFactory)
+        public AnimalsController(IHttpClientFactory httpClientFactory, IConfiguration configuration)
         {
-            _context = context;
             _httpClientFactory = httpClientFactory;
+            _configuration = configuration;
         }
 
-        // GET: api/animals
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Animal>>> GetAnimals()
-        {
-            return await _context.Animals.ToListAsync();
-        }
-
-        // POST: api/animals/ask
         [HttpPost("ask")]
-        public async Task<ActionResult<string>> AskAnimalQuestion([FromBody] AnimalQuestionRequest request)
+        public async Task<IActionResult> Ask([FromBody] AnimalQuestionRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.Question))
-                return BadRequest("Please ask a question.");
+            if (request == null || string.IsNullOrWhiteSpace(request.Request))
+                return BadRequest(new { error = "The request field is required." });
 
-            var client = _httpClientFactory.CreateClient("OpenAI");
+            // Build prompt for OpenAI
+            var speciesText = request.Species?.ToString() ?? "Unknown";
+            var sexText = request.Sex?.ToString() ?? "Unknown";
+            var dietText = request.Diet?.ToString() ?? "Unknown";
+            var weightText = request.Weight.HasValue && request.Unit.HasValue
+                             ? $"{request.Weight} {request.Unit}"
+                             : "Unknown";
 
-            // Build prompt with context
-            var systemPrompt = "You are an expert pet assistant. Answer questions about pet care, diet, species, and general animal knowledge." +
-                "Include a disclaimer in every response that this advice is general information and that users should consult a licensed vet for medical concerns.";
+            var prompt = $@"
+You are a helpful assistant for pet owners. 
+Answer the question clearly and concisely.
 
-            if (request.Species != null)
-                systemPrompt += $" The animal is a {request.Species}.";
-            if (request.Sex != null)
-                systemPrompt += $" Sex: {request.Sex}.";
-            if (request.Diet != null)
-                systemPrompt += $" Diet: {request.Diet}.";
-            if (request.Weight != null && request.Unit != null)
-                systemPrompt += $" Weight: {request.Weight} {request.Unit}.";
+Question: {request.Request}
+Species: {speciesText}
+Sex: {sexText}
+Diet: {dietText}
+Weight: {weightText}";
 
-            var requestBody = new
+            try
             {
-                model = "gpt-4",
-                messages = new[]
+                var client = _httpClientFactory.CreateClient("OpenAI");
+                var body = new
                 {
-                    new { role = "system", content = systemPrompt },
-                    new { role = "user", content = request.Question }
-                },
-                max_tokens = 400
-            };
+                    model = "gpt-3.5-turbo",
+                    messages = new[]
+                    {
+                        new { role = "system", content = "You are a helpful pet assistant." },
+                        new { role = "user", content = prompt }
+                    },
+                    max_tokens = 200
+                };
 
-            var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+                var jsonBody = JsonSerializer.Serialize(body);
+                var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
 
-            var response = await client.PostAsync("v1/chat/completions", content);
+                var response = await client.PostAsync("v1/chat/completions", content);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorText = await response.Content.ReadAsStringAsync();
+                    return StatusCode((int)response.StatusCode, errorText);
+                }
 
-            if (!response.IsSuccessStatusCode)
-                return StatusCode((int)response.StatusCode, "AI request failed.");
+                var responseText = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(responseText);
+                var answer = doc.RootElement
+                                .GetProperty("choices")[0]
+                                .GetProperty("message")
+                                .GetProperty("content")
+                                .GetString();
 
-            var jsonResponse = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(jsonResponse);
-            var answer = doc.RootElement
-                            .GetProperty("choices")[0]
-                            .GetProperty("message")
-                            .GetProperty("content")
-                            .GetString()?.Trim();
-
-            return Ok(answer);
+                return Ok(answer);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error contacting OpenAI: {ex.Message}");
+            }
         }
     }
 }
