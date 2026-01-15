@@ -33,17 +33,17 @@ builder.Services.AddDbContext<PetContext>(options =>
 
 var app = builder.Build();
 
-// Enable Swagger
+// Serve static HTML files
+app.UseDefaultFiles(); // serves index.html automatically
+app.UseStaticFiles();  // serves files in wwwroot
+
+// Enable Swagger at /swagger
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
-    // Point to the exact URL where swagger.json is available
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "FurAndFangs API v1");
-
-    // Open Swagger UI at root URL
-    c.RoutePrefix = string.Empty;
+    c.RoutePrefix = "swagger"; // Swagger UI now at /swagger
 });
-
 
 app.UseHttpsRedirection();
 app.MapControllers();
